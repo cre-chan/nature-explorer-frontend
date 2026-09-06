@@ -154,14 +154,16 @@ class _JournalCard extends StatelessWidget {
                 color: const Color(0xFFE7ECDF),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.auto_awesome, color: Color(0xFF526B50)),
-                  SizedBox(width: 10),
+                  const Icon(Icons.auto_awesome, color: Color(0xFF526B50)),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'ミドリに葉脈のような淡い模様が増えました',
-                      style: TextStyle(fontWeight: FontWeight.w700),
+                      entry.observations.isEmpty
+                          ? '見つからなかった時間も自然日記に残しました'
+                          : 'ミドリに葉脈のような淡い模様が増えました',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
                 ],

@@ -7,6 +7,8 @@ import '../../app/providers.dart';
 import '../../data/models/app_models.dart';
 import '../../data/repositories/repositories.dart';
 
+const _unchangedExploration = Object();
+
 /// 探索本体、安全確認、処理中、表示用エラーをまとめた状態。
 class ExplorationUiState {
   const ExplorationUiState({
@@ -20,12 +22,14 @@ class ExplorationUiState {
   final bool busy;
   final String? error;
   ExplorationUiState copyWith({
-    Exploration? exploration,
+    Object? exploration = _unchangedExploration,
     bool? safetyAccepted,
     bool? busy,
     String? error,
   }) => ExplorationUiState(
-    exploration: exploration ?? this.exploration,
+    exploration: identical(exploration, _unchangedExploration)
+        ? this.exploration
+        : exploration as Exploration?,
     safetyAccepted: safetyAccepted ?? this.safetyAccepted,
     busy: busy ?? this.busy,
     error: error,
@@ -35,13 +39,22 @@ class ExplorationUiState {
 /// 探索Repositoryのストリームを購読し、ユーザー操作をコマンド化するViewModel。
 class ExplorationViewModel extends Notifier<ExplorationUiState> {
   StreamSubscription<Exploration?>? _subscription;
+  StreamSubscription<ExplorationIssue>? _issueSubscription;
   @override
   ExplorationUiState build() {
     final repository = ref.watch(explorationRepositoryProvider);
     _subscription = repository.watchActive().listen(
       (value) => state = state.copyWith(exploration: value),
     );
-    ref.onDispose(() => _subscription?.cancel());
+    _issueSubscription = repository.watchIssues().listen((issue) {
+      if (issue == ExplorationIssue.automaticStopFailed) {
+        state = state.copyWith(error: '30分の自動終了で位置記録を停止できませんでした。停止を再試行しています');
+      }
+    });
+    ref.onDispose(() {
+      _subscription?.cancel();
+      _issueSubscription?.cancel();
+    });
     return ExplorationUiState(exploration: repository.active);
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/exploration/exploration_view.dart';
+import '../features/exploration/paused_exploration_view.dart';
 import '../features/home/home_view.dart';
 import '../features/journal/journal_view.dart';
 import '../features/observation/observation_view.dart';
@@ -22,6 +23,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/exploration/active',
       builder: (_, _) => const ExplorationView(),
+    ),
+    GoRoute(
+      path: '/exploration/paused',
+      builder: (_, _) => const PausedExplorationView(),
     ),
     GoRoute(
       path: '/observation/:id',
