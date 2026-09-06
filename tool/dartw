@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+
+# Flutter同梱の固定Dart SDKをこのプロセスだけへ設定する。
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+. "$SCRIPT_DIR/env.sh"
+
+# 利用者の引数を加工せず、固定Dartへ渡す。
+exec "$FLUTTER_ROOT/bin/dart" "$@"

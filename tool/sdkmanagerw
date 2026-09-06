@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+
+# ユーザー専用Android SDKとJDKをこのプロセスだけへ設定する。
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+. "$SCRIPT_DIR/env.sh"
+
+# 利用者の引数を固定revisionのsdkmanagerへ渡す。
+exec "$ANDROID_SDK_ROOT/cmdline-tools/15859902/bin/sdkmanager" "$@"

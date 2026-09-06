@@ -1,0 +1,79 @@
+{
+  "toolchainDirectoryPolicy": {
+    "macos": "$HOME/Library/Developer/nature-explorer",
+    "linux": "${XDG_DATA_HOME:-$HOME/.local/share}/nature-explorer",
+    "windows": "%LOCALAPPDATA%\\nature-explorer"
+  },
+  "flutter": {
+    "version": "3.47.2",
+    "archives": {
+      "macos-arm64": {
+        "url": "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_arm64_3.47.2-stable.zip",
+        "sha256": "f456fd6733053d9301828a2e702d6cbec872923126809aa8c48eb0a696d6cc01"
+      },
+      "macos-x64": {
+        "url": "https://storage.googleapis.com/flutter_infra_release/releases/stable/macos/flutter_macos_3.47.2-stable.zip",
+        "sha256": "b6fd6ba98c8503d5ee06a6670627b5b1c36167ece3427435ec83b66e9b28c6b5"
+      },
+      "linux-x64": {
+        "url": "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.47.2-stable.tar.xz",
+        "sha256": "447878859d01ca9bfdb99a85f245af07ed8a15fedcd9d189c4749e8e92d1f185"
+      },
+      "windows-x64": {
+        "url": "https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_3.47.2-stable.zip",
+        "sha256": "37934f2128a55d77a38baba12fd611157ed23a47bf7d2b7d17e9e84da118409d"
+      }
+    }
+  },
+  "java": {
+    "distribution": "Eclipse Temurin",
+    "version": "17.0.20.1+1",
+    "archives": {
+      "macos-arm64": {
+        "url": "https://api.adoptium.net/v3/binary/version/jdk-17.0.20.1+1/mac/aarch64/jdk/hotspot/normal/eclipse",
+        "sha256": "196d13ba5f10414bef7f6a05a9b3f00edacb18ebacef2b99485db9e2ee18f0e8"
+      },
+      "macos-x64": {
+        "url": "https://api.adoptium.net/v3/binary/version/jdk-17.0.20.1+1/mac/x64/jdk/hotspot/normal/eclipse",
+        "sha256": "c01975da12ed4235250ff891fe8bba73a9e73037d444b269c9d0922b5dbc8e0a"
+      },
+      "linux-x64": {
+        "url": "https://api.adoptium.net/v3/binary/version/jdk-17.0.20.1+1/linux/x64/jdk/hotspot/normal/eclipse",
+        "sha256": "3808d1d15e3ec6bd5b84057fb5d84c33d8a1536a258146bcea2e603fc726e08e"
+      },
+      "windows-x64": {
+        "url": "https://api.adoptium.net/v3/binary/version/jdk-17.0.20.1+1/windows/x64/jdk/hotspot/normal/eclipse",
+        "sha256": "e53a79c3c3d86865bd7e787903884331068e71321714ffd44f145785affc7cb0"
+      }
+    }
+  },
+  "android": {
+    "commandLineToolsRevision": "15859902",
+    "archives": {
+      "macos-arm64": {
+        "url": "https://dl.google.com/android/repository/commandlinetools-mac_arm64-15859902_latest.zip",
+        "sha256": "835b62a26162b229b441d1f6d4680383815a270809eb33522c0d480fa5002c4e"
+      },
+      "macos-x64": {
+        "url": "https://dl.google.com/android/repository/commandlinetools-mac_x86_64-15859902_latest.zip",
+        "sha256": "c5a6378ab5cf7e0d5701921405115befff13e9ff7417fb588389338f8bd050f3"
+      },
+      "linux-x64": {
+        "url": "https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip",
+        "sha256": "4e4c464f145a7512b57d088ac6c278c03c9eea610886b35a5e0804e74eedf583"
+      },
+      "windows-x64": {
+        "url": "https://dl.google.com/android/repository/commandlinetools-win-15859902_latest.zip",
+        "sha256": "90ae805d20434428bffcb699c290860f19bb5f66a67e6b330067e3de801fb04a"
+      }
+    },
+    "packages": {
+      "platform": "android-36",
+      "pluginCompilePlatforms": ["android-34", "android-35"],
+      "buildTools": "36.0.0",
+      "platformTools": "37.0.1",
+      "ndk": "28.2.13676358",
+      "cmake": "3.22.1"
+    }
+  }
+}

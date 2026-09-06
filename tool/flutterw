@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+
+# 固定Flutter/JDK/Android SDKをこのプロセスだけへ設定する。
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+. "$SCRIPT_DIR/env.sh"
+
+# Gradleが同じSDKを使うようlocal.propertiesを実行前に同期する。
+"$SCRIPT_DIR/configure_android.sh"
+
+# 利用者の引数を加工せず、ユーザー専用Flutterへ渡す。
+exec "$FLUTTER_ROOT/bin/flutter" "$@"
