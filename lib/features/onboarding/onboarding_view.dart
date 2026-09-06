@@ -17,18 +17,54 @@ class _OnboardingViewState extends ConsumerState<OnboardingView> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await ref.read(onboardingViewModelProvider.notifier).load();
-      final state = ref.read(onboardingViewModelProvider);
-      if (mounted && state.accepted) {
-        context.go(state.resumePath ?? '/home');
-      }
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadAndRedirect());
+  }
+
+  Future<void> _loadAndRedirect() async {
+    await ref.read(onboardingViewModelProvider.notifier).load();
+    final state = ref.read(onboardingViewModelProvider);
+    if (mounted &&
+        state.accepted &&
+        state.error == null &&
+        state.resumePath != null) {
+      context.go(state.resumePath!);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(onboardingViewModelProvider);
+    if (!state.loading && state.accepted && state.error != null) {
+      return AppPage(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.location_off_outlined,
+                  size: 88,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  state.error!,
+                  style: Theme.of(context).textTheme.titleLarge,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                FilledButton.icon(
+                  onPressed: _loadAndRedirect,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('位置記録の停止を再試行する'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     return AppPage(
       child: PagePadding(
         child: state.loading

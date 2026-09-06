@@ -13,6 +13,11 @@ class LocationAccessException implements Exception {
   final LocationAccess access;
 }
 
+/// 中断探索の復元時に、端末の位置記録を停止できなかったことを表す。
+class ExplorationRestoreException implements Exception {
+  const ExplorationRestoreException();
+}
+
 /// ユーザー操作外で発生した探索処理の失敗種別。
 enum ExplorationIssue { automaticStopFailed }
 
@@ -243,7 +248,12 @@ class LocalExplorationRepository implements ExplorationRepository {
       // プロセス終了中は停止完了を保証できないため、次回起動時に必ず停止状態へ正規化する。
       _elapsedBeforeResume = _active!.elapsedSeconds;
       _resumedAt = null;
-      await _endTracking();
+      try {
+        await _endTracking();
+      } catch (_) {
+        // FGSの実状態が不明な間は、停止済みを意味するpausedへ進めない。
+        throw const ExplorationRestoreException();
+      }
       _active = _active!.copyWith(phase: ExplorationPhase.paused);
       await _persist();
     }
