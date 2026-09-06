@@ -16,4 +16,4 @@ Cancelling the Geolocator position stream left its Android foreground service an
 
 ## Consequences
 
-Pause, stop, automatic timeout, deletion, and disposal share one verifiable shutdown path. A shutdown failure remains visible as an active exploration and is surfaced to the user instead of falsely claiming that location recording stopped. The application takes responsibility for testing the notification and foreground service lifecycle on a physical Android device whenever the location package changes.
+Pause, stop, automatic timeout, deletion, and disposal share one verifiable shutdown path. A shutdown failure remains visible as an active exploration and is surfaced to the user instead of falsely claiming that location recording stopped. Automatic timeout failures are reported through a Repository issue stream and retried until shutdown succeeds. The application takes responsibility for testing the notification and foreground service lifecycle on a physical Android device whenever the location package changes.

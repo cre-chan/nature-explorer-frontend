@@ -1,4 +1,5 @@
 // Repositoryの永続化、集計、エラー変換、複数探索を端末なしで検証する。
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -97,6 +98,74 @@ void main() {
     await repository.dispose();
     await location.close();
   });
+
+  test('automatic stop failure is reported and retried', () async {
+    final location = FakeLocationService()..failToStop = true;
+    final clock = FakeClockService(DateTime(2026, 9, 4, 9));
+    final repository = LocalExplorationRepository(
+      InMemoryDatabaseService(),
+      location,
+      clock,
+      const Uuid(),
+    );
+    final issues = <ExplorationIssue>[];
+    final issueSubscription = repository.watchIssues().listen(issues.add);
+    await repository.start();
+    clock.advance(const Duration(minutes: 30));
+    await Future<void>.delayed(const Duration(milliseconds: 1100));
+    expect(repository.active?.phase, ExplorationPhase.active);
+    expect(issues, [ExplorationIssue.automaticStopFailed]);
+    expect(location.tracking, isTrue);
+
+    location.failToStop = false;
+    await Future<void>.delayed(const Duration(milliseconds: 1100));
+    expect(repository.active?.phase, ExplorationPhase.completed);
+    expect(location.stopCount, 1);
+    expect(location.tracking, isFalse);
+    await issueSubscription.cancel();
+    await repository.dispose();
+    await location.close();
+  });
+
+  test(
+    'restoring an interrupted active exploration pauses without restart',
+    () async {
+      final database = InMemoryDatabaseService();
+      final location = FakeLocationService();
+      final interrupted = Exploration(
+        id: 'interrupted',
+        startedAt: DateTime(2026, 9, 4, 9),
+        phase: ExplorationPhase.active,
+        elapsedSeconds: 75,
+      );
+      await database.write(
+        'active_exploration',
+        jsonEncode(interrupted.toJson()),
+      );
+      final repository = LocalExplorationRepository(
+        database,
+        location,
+        FakeClockService(DateTime(2026, 9, 4, 9, 2)),
+        const Uuid(),
+      );
+
+      await repository.restore();
+
+      expect(repository.active?.phase, ExplorationPhase.paused);
+      expect(repository.active?.elapsedSeconds, 75);
+      expect(location.startCount, 0);
+      expect(location.tracking, isFalse);
+      expect(
+        Exploration.fromJson(
+          jsonDecode(database.values['active_exploration']!)
+              as Map<String, Object?>,
+        ).phase,
+        ExplorationPhase.paused,
+      );
+      await repository.dispose();
+      await location.close();
+    },
+  );
 
   test('clear and dispose both stop an active location session', () async {
     final location = FakeLocationService();

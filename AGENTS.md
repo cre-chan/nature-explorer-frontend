@@ -19,6 +19,9 @@ The user's explicit instructions take precedence over this file.
 - Never display raw coordinates or route maps. Show only duration, approximate distance, photo count, and observation count.
 - Re-encode captured photos without EXIF metadata before persisting them.
 - Record location only while an exploration is active. Support pause, resume, manual stop, and a 30-minute automatic stop.
+- Restore an exploration interrupted by process termination as paused. Restart location tracking only after a visible resume action.
+- Allow manual stop with zero observations only after a confirmation dialog; zero-observation journals must not advance companion growth.
+- Keep an exploration active and show an error while location shutdown is failing; automatic timeout shutdown must retry until it succeeds.
 - A low-confidence or indeterminate AI result is not a failed exploration.
 - Saving a journal entry must never block another exploration on the same day.
 

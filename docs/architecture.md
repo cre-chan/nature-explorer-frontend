@@ -21,6 +21,8 @@ Viewは描画、簡単な表示分岐、入力イベントからViewModelコマ�
 | 初回同意 | `lib/features/onboarding/onboarding_view.dart` | `OnboardingView` |
 | ホーム・相棒 | `lib/features/home/home_view.dart` | `HomeView`、`CompanionView` |
 | 探索 | `lib/features/exploration/exploration_view.dart` | `ExplorationPrepView`、`ExplorationView`、`GpsStatusView`、`ReviewView` |
+| 探索の一時停止 | `lib/features/exploration/paused_exploration_view.dart` | `PausedExplorationView` |
+| 探索終了確認 | `lib/features/exploration/exploration_stop_dialog.dart` | `confirmExplorationStop` |
 | 撮影 | `lib/features/observation/capture_view.dart` | `CaptureView` |
 | 観察入力 | `lib/features/observation/observation_view.dart` | `ObservationView` |
 | 日記 | `lib/features/journal/journal_view.dart` | `JournalView` |
@@ -51,7 +53,7 @@ Repositoryはアプリデータの唯一の窓口です。永続化順序、集�
 
 | インターフェース | ローカル実装 | 責務 |
 | --- | --- | --- |
-| `ExplorationRepository` | `LocalExplorationRepository` | 探索開始・一時停止・再開・終了・30分自動終了、位置セッションの直列化、GPS点と距離の保存、復元 |
+| `ExplorationRepository` | `LocalExplorationRepository` | 探索開始・一時停止・再開・終了・30分自動終了、位置セッションの直列化、GPS点と距離の保存、中断状態の復元、非同期エラー通知 |
 | `ObservationRepository` | `LocalObservationRepository` | 撮影、画像無害化、観察入力、AIモック判定、現在の観察の復元 |
 | `JournalRepository` | `LocalJournalRepository` | 探索と観察を日記として保存し、同日の複数探索を保持 |
 | `CompanionRepository` | `LocalCompanionRepository` | 観察結果から相棒状態を更新・保存 |
@@ -85,7 +87,15 @@ Serviceは単一の外部データ源または端末機能をラップし、業�
 
 `LocationService.startTracking()`は位置ストリームとAndroidの位置フォアグラウンドサービスを開始し、`stopTracking()`は継続通知を含めて明示的に終了します。`LocalExplorationRepository`だけがこのAPIを呼び、一時停止、手動終了、30分自動終了、全削除、Repository破棄でストリーム解除後に停止完了を待ちます。
 
-探索開始と再開は画面が表示されているユーザー操作からのみ行います。Androidでは`ACCESS_BACKGROUND_LOCATION`を要求せず、探索中の位置フォアグラウンドサービスが動作している間だけバックグラウンド記録を継続します。停止に失敗した場合は探索状態を一時停止へ変更せず、ViewModelがユーザーへエラーを表示します。
+探索開始と再開は画面が表示されているユーザー操作からのみ行います。Androidでは`ACCESS_BACKGROUND_LOCATION`を要求せず、探索中の位置フォアグラウンドサービスが動作している間だけバックグラウンド記録を継続します。アプリのプロセス終了中は非同期停止の完了を保証できないため、次回起動時に保存状態が`active`なら位置サービスを停止し、探索を`paused`へ正規化して`PausedExplorationView`を表示します。位置記録は中央の再開ボタンを押すまで開始しません。
+
+手動終了は観察件数にかかわらず選択でき、確認ダイアログで確定してから位置記録を停止します。観察0件の探索も日記へ保存できますが、相棒の観察数や成長状態は変化しません。
+
+停止に失敗した場合は探索状態を一時停止または完了へ変更しません。手動操作の失敗はコマンド結果から、自動終了の失敗は`ExplorationRepository.watchIssues()`からViewModelへ伝え、画面へ表示します。30分自動終了は停止に成功するまで再試行します。
+
+## 画面遷移
+
+`lib/main.dart`が`ProviderScope`と`SobaNoInochiApp`を起動し、`lib/app/app.dart`の`GoRouter`が画面を管理します。中断探索は`/exploration/paused`、実行中探索は`/exploration/active`、終了後は`/review`へ遷移します。
 
 ## 機能追加時の判断
 

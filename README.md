@@ -44,6 +44,8 @@ Windows PowerShell:
 
 テストではRiverpod Providerを上書きし、GPS、カメラ、時刻、AI、DBをFake実装へ差し替えます。
 
+自動テストで確認済みの回帰ケースは[docs/test-cases.md](docs/test-cases.md)、未実装の異常系と挙動検討は[GitHub Issues](https://github.com/cre-chan/nature-explorer-frontend/issues)で管理します。
+
 ### Android実機で対話的にデバッグする
 
 開発中の実機テストでは、`flutter run`をwrapper経由で実行します。この方法ならアプリのインストールと起動に加え、Flutterログ、Androidログ、例外、Hot Reload操作が同じターミナルへ表示されます。`DEVICE_SERIAL`は`devices -l`の各行の先頭に表示される値へ置き換えてください。
@@ -161,6 +163,10 @@ Windowsでは上記コマンドの`./tool/adbw`を`.\tool\adbw.cmd`へ置き換�
 
 実機では、探索開始後にバックグラウンドへ移すと「そばのいのち・探索中」通知が表示されることを確認します。一時停止または終了後は2秒以内に通知と端末の位置使用表示が消えること、再開と一時停止を3回繰り返しても通知や位置サービスが重複しないことを確認してください。正確な座標や経路は確認画面へ表示しません。
 
+探索中にアプリのプロセスが終了した場合、次回起動時は探索を自動再開せず、一時停止専用画面を表示します。中央の「探索を再開する」を押したときだけ位置記録が再開されることを確認してください。手動終了は観察が0件でも選べますが、確認ダイアログの「終了する」を押すまで終了しません。0件の探索も自然日記へ保存でき、相棒の観察数は増えません。
+
+30分の自動終了で位置サービスの停止に失敗した場合は、探索を終了済みと表示せず、画面へエラーを表示して停止を再試行します。実機確認では30分経過後に通知と位置使用表示が消え、振り返り画面へ進めることを確認してください。
+
 ## スクリプト
 
 すべてのラッパーは専用SDKを現在のプロセスにだけ設定します。グローバルPATH、シェル設定、システムJavaやNode.jsは変更しません。
@@ -185,4 +191,6 @@ Windowsの`.cmd`は同名の`.ps1`実装を現在のプロセスだけExecution 
 - MVVM技術判断: [docs/adr/0001-flutter-mvvm.md](docs/adr/0001-flutter-mvvm.md)
 - ツールチェーン技術判断: [docs/adr/0002-portable-toolchain-wrappers.md](docs/adr/0002-portable-toolchain-wrappers.md)
 - 位置セッション技術判断: [docs/adr/0003-explicit-location-session-lifecycle.md](docs/adr/0003-explicit-location-session-lifecycle.md)
+- 中断探索の復元判断: [docs/adr/0004-interrupted-exploration-recovery.md](docs/adr/0004-interrupted-exploration-recovery.md)
+- 回帰・異常系テスト設計: [docs/test-cases.md](docs/test-cases.md)
 - エージェント向け実装規則: [AGENTS.md](AGENTS.md)

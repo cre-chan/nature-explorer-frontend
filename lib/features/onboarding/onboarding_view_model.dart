@@ -53,7 +53,7 @@ class OnboardingViewModel extends Notifier<OnboardingUiState> {
           ? '/home'
           : active.phase == ExplorationPhase.completed
           ? '/review'
-          : '/exploration/active',
+          : '/exploration/paused',
     );
   }
 

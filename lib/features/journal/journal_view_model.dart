@@ -41,7 +41,7 @@ class JournalViewModel extends Notifier<JournalUiState> {
     // 日記保存後に相棒を更新し、最後に進行中データを消して再探索可能にする。
     final exploration = ref.read(explorationRepositoryProvider).active;
     final observations = ref.read(observationRepositoryProvider).current;
-    if (exploration == null || observations.isEmpty) return false;
+    if (exploration == null) return false;
     state = state.copyWith(saving: true);
     try {
       await ref.read(journalRepositoryProvider).save(exploration, observations);

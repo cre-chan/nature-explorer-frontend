@@ -13,9 +13,13 @@ class LocationAccessException implements Exception {
   final LocationAccess access;
 }
 
+/// ユーザー操作外で発生した探索処理の失敗種別。
+enum ExplorationIssue { automaticStopFailed }
+
 /// 探索のライフサイクルと集計済み状態を提供するデータ窓口。
 abstract interface class ExplorationRepository {
   Stream<Exploration?> watchActive();
+  Stream<ExplorationIssue> watchIssues();
   Exploration? get active;
   Future<Exploration> start();
   Future<void> pause();
@@ -77,16 +81,21 @@ class LocalExplorationRepository implements ExplorationRepository {
   final ClockService _clock;
   final Uuid _uuid;
   final _controller = StreamController<Exploration?>.broadcast();
+  final _issueController = StreamController<ExplorationIssue>.broadcast();
   StreamSubscription<GeoPoint>? _locations;
   Timer? _ticker;
   Exploration? _active;
   DateTime? _resumedAt;
   int _elapsedBeforeResume = 0;
+  bool _automaticStopRunning = false;
+  bool _automaticStopFailureReported = false;
 
   @override
   Exploration? get active => _active;
   @override
   Stream<Exploration?> watchActive() => _controller.stream;
+  @override
+  Stream<ExplorationIssue> watchIssues() => _issueController.stream;
 
   @override
   Future<Exploration> start() async {
@@ -100,6 +109,7 @@ class LocalExplorationRepository implements ExplorationRepository {
     );
     _resumedAt = now;
     _elapsedBeforeResume = 0;
+    _automaticStopFailureReported = false;
     try {
       await _beginTracking();
       await _persist();
@@ -119,6 +129,10 @@ class LocalExplorationRepository implements ExplorationRepository {
     await _endTracking();
     final positions = await _location.startTracking();
     _locations = positions.listen(_addPoint);
+    _startTicker();
+  }
+
+  void _startTicker() {
     _ticker?.cancel();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
   }
@@ -159,8 +173,22 @@ class LocalExplorationRepository implements ExplorationRepository {
         _elapsedBeforeResume + _clock.now().difference(resumedAt).inSeconds;
     _active = active.copyWith(elapsedSeconds: elapsed);
     if (elapsed >= 30 * 60) {
+      if (_automaticStopRunning) return;
       // UIが前面になくても、Repository自身が上限時間を保証する。
-      await stop();
+      _automaticStopRunning = true;
+      try {
+        await stop();
+        _automaticStopFailureReported = false;
+      } catch (_) {
+        // 停止失敗後も再試行を続け、初回の失敗をViewModelへ通知する。
+        if (!_automaticStopFailureReported) {
+          _automaticStopFailureReported = true;
+          _issueController.add(ExplorationIssue.automaticStopFailed);
+        }
+        if (_active?.phase == ExplorationPhase.active) _startTicker();
+      } finally {
+        _automaticStopRunning = false;
+      }
     } else {
       _emit();
       if (elapsed % 15 == 0) await _persist();
@@ -186,6 +214,7 @@ class LocalExplorationRepository implements ExplorationRepository {
     await _beginTracking();
     _active = active.copyWith(phase: ExplorationPhase.active);
     _resumedAt = _clock.now();
+    _automaticStopFailureReported = false;
     await _persist();
     _emit();
   }
@@ -211,9 +240,12 @@ class LocalExplorationRepository implements ExplorationRepository {
     if (value == null) return;
     _active = Exploration.fromJson(value);
     if (_active!.phase == ExplorationPhase.active) {
+      // プロセス終了中は停止完了を保証できないため、次回起動時に必ず停止状態へ正規化する。
       _elapsedBeforeResume = _active!.elapsedSeconds;
-      _resumedAt = _clock.now();
-      await _beginTracking();
+      _resumedAt = null;
+      await _endTracking();
+      _active = _active!.copyWith(phase: ExplorationPhase.paused);
+      await _persist();
     }
     _emit();
   }
@@ -241,6 +273,7 @@ class LocalExplorationRepository implements ExplorationRepository {
       await _endTracking();
     } finally {
       await _controller.close();
+      await _issueController.close();
     }
   }
 }

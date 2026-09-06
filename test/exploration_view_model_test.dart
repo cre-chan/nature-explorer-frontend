@@ -36,4 +36,69 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     await location.close();
   });
+
+  test('repository null emission clears the exploration UI state', () async {
+    final location = FakeLocationService();
+    final container = ProviderContainer(
+      overrides: [
+        databaseServiceProvider.overrideWithValue(InMemoryDatabaseService()),
+        clockServiceProvider.overrideWithValue(
+          FakeClockService(DateTime(2026, 9, 4, 9)),
+        ),
+        locationServiceProvider.overrideWithValue(location),
+      ],
+    );
+    final viewModel = container.read(explorationViewModelProvider.notifier);
+    viewModel.setSafetyAccepted(true);
+    expect(await viewModel.start(), isTrue);
+    expect(container.read(explorationViewModelProvider).exploration, isNotNull);
+
+    await container.read(explorationRepositoryProvider).clearActive();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(container.read(explorationViewModelProvider).exploration, isNull);
+    container.dispose();
+    await Future<void>.delayed(Duration.zero);
+    await location.close();
+  });
+
+  test(
+    'automatic stop failure is exposed and a later retry completes',
+    () async {
+      final location = FakeLocationService()..failToStop = true;
+      final clock = FakeClockService(DateTime(2026, 9, 4, 9));
+      final container = ProviderContainer(
+        overrides: [
+          databaseServiceProvider.overrideWithValue(InMemoryDatabaseService()),
+          clockServiceProvider.overrideWithValue(clock),
+          locationServiceProvider.overrideWithValue(location),
+        ],
+      );
+      final viewModel = container.read(explorationViewModelProvider.notifier);
+      viewModel.setSafetyAccepted(true);
+      expect(await viewModel.start(), isTrue);
+
+      clock.advance(const Duration(minutes: 30));
+      await Future<void>.delayed(const Duration(milliseconds: 1100));
+      expect(
+        container.read(explorationViewModelProvider).error,
+        contains('自動終了'),
+      );
+      expect(
+        container.read(explorationViewModelProvider).exploration?.phase,
+        ExplorationPhase.active,
+      );
+
+      location.failToStop = false;
+      await Future<void>.delayed(const Duration(milliseconds: 1100));
+      expect(
+        container.read(explorationViewModelProvider).exploration?.phase,
+        ExplorationPhase.completed,
+      );
+      expect(container.read(explorationViewModelProvider).error, isNull);
+      container.dispose();
+      await Future<void>.delayed(Duration.zero);
+      await location.close();
+    },
+  );
 }

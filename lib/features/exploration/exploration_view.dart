@@ -8,6 +8,7 @@ import '../journal/journal_view_model.dart';
 import '../observation/capture_view.dart';
 import '../observation/observation_view_model.dart';
 import '../shared/presentation.dart';
+import 'exploration_stop_dialog.dart';
 import 'exploration_view_model.dart';
 import 'gps_status_view_model.dart';
 
@@ -124,6 +125,13 @@ class ExplorationView extends ConsumerWidget {
     if (exploration == null) {
       return const AppPage(child: Center(child: CircularProgressIndicator()));
     }
+    if (exploration.phase == ExplorationPhase.completed) {
+      // 30分終了や停止再試行の成功を受け、次のフレームで安全に振り返りへ進む。
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) context.go('/review');
+      });
+      return const AppPage(child: Center(child: CircularProgressIndicator()));
+    }
     final paused = exploration.phase == ExplorationPhase.paused;
     return PopScope(
       canPop: false,
@@ -230,11 +238,16 @@ class ExplorationView extends ConsumerWidget {
                     child: OutlinedButton.icon(
                       onPressed: state.busy
                           ? null
-                          : () => ref
-                                .read(explorationViewModelProvider.notifier)
-                                .togglePause(),
-                      icon: Icon(paused ? Icons.play_arrow : Icons.pause),
-                      label: Text(paused ? '再開' : '一時停止'),
+                          : () async {
+                              final pausedSuccessfully = await ref
+                                  .read(explorationViewModelProvider.notifier)
+                                  .togglePause();
+                              if (pausedSuccessfully && context.mounted) {
+                                context.go('/exploration/paused');
+                              }
+                            },
+                      icon: const Icon(Icons.pause),
+                      label: const Text('一時停止'),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -246,9 +259,13 @@ class ExplorationView extends ConsumerWidget {
               ),
               const SizedBox(height: 10),
               OutlinedButton.icon(
-                onPressed: observations.isEmpty || state.busy
+                onPressed: state.busy
                     ? null
                     : () async {
+                        if (!await confirmExplorationStop(context) ||
+                            !context.mounted) {
+                          return;
+                        }
                         final completed = await ref
                             .read(explorationViewModelProvider.notifier)
                             .stop();
@@ -334,13 +351,14 @@ class _ReviewViewState extends ConsumerState<ReviewView> {
           (item) => item.classification == ClassificationStatus.indeterminate,
         )
         .length;
+    final empty = state.observations.isEmpty;
     return AppPage(
       title: '探索のふり返り',
       child: PagePadding(
         child: Column(
           children: [
             const Spacer(),
-            CompanionArt(changing: !pending, size: 290),
+            CompanionArt(changing: !pending && !empty, size: 290),
             const SizedBox(height: 24),
             if (pending) ...[
               const CircularProgressIndicator(),
@@ -356,10 +374,10 @@ class _ReviewViewState extends ConsumerState<ReviewView> {
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ] else ...[
-              const Eyebrow('確認できました'),
+              Eyebrow(empty ? '探索を終えました' : '確認できました'),
               const SizedBox(height: 10),
               Text(
-                '見つけた特徴が、\nミドリの模様になりました',
+                empty ? '見つからない時間も、\n大切な自然の記録です' : '見つけた特徴が、\nミドリの模様になりました',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
