@@ -80,11 +80,16 @@ class FakeFileService implements FileService {
 }
 
 class FakeImageSanitizationService implements ImageSanitizationService {
+  bool failToSanitize = false;
+  int sanitizeCount = 0;
+
   @override
   Future<String> sanitize({
     required String source,
     required String destination,
   }) async {
+    sanitizeCount += 1;
+    if (failToSanitize) throw StateError('画像を無害化できませんでした');
     File(source).copySync(destination);
     return destination;
   }
