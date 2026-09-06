@@ -461,7 +461,8 @@ class LocalSettingsRepository implements SettingsRepository {
 
   @override
   Future<void> deleteAllData() async {
-    await _database.clear();
+    // 写真削除に失敗した段階ではDBを残し、ユーザーが同じ操作を安全に再試行できるようにする。
     await _files.deleteAllPhotos();
+    await _database.clear();
   }
 }

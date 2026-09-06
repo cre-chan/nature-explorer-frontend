@@ -285,4 +285,28 @@ void main() {
       containsAll(['morning', 'afternoon']),
     );
   });
+
+  test(
+    'all-data deletion keeps database retryable when photo deletion fails',
+    () async {
+      final database = InMemoryDatabaseService();
+      await database.write('settings', 'saved-settings');
+      await database.write('journal_entries', 'saved-journals');
+      final temp = await Directory.systemTemp.createTemp('soba-delete-test');
+      final photo = File('${temp.path}/photo.jpg')..writeAsBytesSync([1, 2, 3]);
+      final files = FakeFileService(temp)..failToDelete = true;
+      final repository = LocalSettingsRepository(database, files);
+
+      await expectLater(repository.deleteAllData(), throwsStateError);
+      expect(database.values['settings'], 'saved-settings');
+      expect(database.values['journal_entries'], 'saved-journals');
+      expect(photo.existsSync(), isTrue);
+
+      files.failToDelete = false;
+      await repository.deleteAllData();
+      expect(database.values, isEmpty);
+      expect(temp.existsSync(), isFalse);
+      expect(files.deleteCount, 2);
+    },
+  );
 }
