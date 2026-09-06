@@ -21,6 +21,13 @@ class CaptureView extends ConsumerWidget {
                   .capture();
               if (item != null && context.mounted) {
                 context.push('/observation/${item.id}');
+              } else if (context.mounted) {
+                final error = ref.read(captureViewModelProvider).error;
+                if (error != null) {
+                  // カメラキャンセルは通知せず、安全な画像保存に失敗した場合だけ案内する。
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text(error)));
+                }
               }
             },
       icon: state.capturing

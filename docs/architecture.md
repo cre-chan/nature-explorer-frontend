@@ -23,7 +23,7 @@ Viewは描画、簡単な表示分岐、入力イベントからViewModelコマ�
 | 探索 | `lib/features/exploration/exploration_view.dart` | `ExplorationPrepView`、`ExplorationView`、`GpsStatusView`、`ReviewView` |
 | 探索の一時停止 | `lib/features/exploration/paused_exploration_view.dart` | `PausedExplorationView` |
 | 探索終了確認 | `lib/features/exploration/exploration_stop_dialog.dart` | `confirmExplorationStop` |
-| 撮影 | `lib/features/observation/capture_view.dart` | `CaptureView` |
+| 撮影 | `lib/features/observation/capture_view.dart` | `CaptureView`（画像保存失敗をSnackBarで通知） |
 | 観察入力 | `lib/features/observation/observation_view.dart` | `ObservationView` |
 | 日記 | `lib/features/journal/journal_view.dart` | `JournalView` |
 | 設定 | `lib/features/settings/settings_view.dart` | `SettingsView` |
