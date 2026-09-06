@@ -7,12 +7,20 @@ import 'package:soba_no_inochi/data/services/services.dart';
 
 class InMemoryDatabaseService implements DatabaseService {
   final values = <String, String>{};
+  String? failNextDeleteForKey;
   @override
   Future<String?> read(String key) async => values[key];
   @override
   Future<void> write(String key, String value) async => values[key] = value;
   @override
-  Future<void> delete(String key) async => values.remove(key);
+  Future<void> delete(String key) async {
+    if (failNextDeleteForKey == key) {
+      failNextDeleteForKey = null;
+      throw StateError('$keyを削除できませんでした');
+    }
+    values.remove(key);
+  }
+
   @override
   Future<void> clear() async => values.clear();
 }

@@ -58,7 +58,10 @@ abstract interface class JournalRepository {
 /// 相棒の状態を保存・更新するデータ窓口。
 abstract interface class CompanionRepository {
   Future<Companion> load();
-  Future<Companion> applyObservations(List<Observation> observations);
+  Future<Companion> applyObservations(
+    String explorationId,
+    List<Observation> observations,
+  );
 }
 
 /// 設定の保存と全データ削除を提供するデータ窓口。
@@ -253,9 +256,10 @@ class LocalExplorationRepository implements ExplorationRepository {
   @override
   Future<void> clearActive() async {
     await _endTracking();
+    // 永続化削除の成功前は再試行に必要な完了探索をメモリから失わない。
+    await _database.delete('active_exploration');
     _resumedAt = null;
     _active = null;
-    await _database.delete('active_exploration');
     _emit();
   }
 
@@ -357,8 +361,9 @@ class LocalObservationRepository implements ObservationRepository {
 
   @override
   Future<void> clearCurrent() async {
-    _current = [];
+    // 削除失敗後も同じ観察を使って日記保存を再試行できる順序にする。
     await _database.delete('current_observations');
+    _current = [];
     _emit();
   }
 
@@ -398,6 +403,10 @@ class LocalJournalRepository implements JournalRepository {
     List<Observation> observations,
   ) async {
     final entries = await list();
+    // 探索IDを冪等キーとして、途中失敗後の再試行で日記を重複させない。
+    for (final existing in entries) {
+      if (existing.exploration.id == exploration.id) return existing;
+    }
     final entry = JournalEntry(
       id: _uuid.v4(),
       exploration: exploration,
@@ -423,8 +432,19 @@ class LocalCompanionRepository implements CompanionRepository {
   }
 
   @override
-  Future<Companion> applyObservations(List<Observation> observations) async {
-    final current = await load();
+  Future<Companion> applyObservations(
+    String explorationId,
+    List<Observation> observations,
+  ) async {
+    final persisted = decodeMap(await _database.read('companion'));
+    final current = persisted == null
+        ? const Companion()
+        : Companion.fromJson(persisted);
+    final appliedExplorationIds = switch (persisted?['appliedExplorationIds']) {
+      final List<Object?> values => values.cast<String>(),
+      _ => <String>[],
+    };
+    if (appliedExplorationIds.contains(explorationId)) return current;
     final useful = observations
         .where(
           (item) =>
@@ -437,7 +457,14 @@ class LocalCompanionRepository implements CompanionRepository {
       stage: useful > 0 ? CompanionStage.changing : current.stage,
       observationCount: current.observationCount + observations.length,
     );
-    await _database.write('companion', jsonEncode(updated.toJson()));
+    // 相棒状態と適用済み探索IDを同じ値へ書き、1回のSQLite更新で整合させる。
+    await _database.write(
+      'companion',
+      jsonEncode({
+        ...updated.toJson(),
+        'appliedExplorationIds': [...appliedExplorationIds, explorationId],
+      }),
+    );
     return updated;
   }
 }
