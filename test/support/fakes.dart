@@ -59,9 +59,13 @@ class FakeLocationService implements LocationService {
 
 class FakeCameraService implements CameraService {
   FakeCameraService(this.source);
-  final String source;
+  String? source;
+  int captureCount = 0;
   @override
-  Future<String?> capture() async => source;
+  Future<String?> capture() async {
+    captureCount += 1;
+    return source;
+  }
 }
 
 class FakeFileService implements FileService {
