@@ -47,7 +47,7 @@ class JournalViewModel extends Notifier<JournalUiState> {
       await ref.read(journalRepositoryProvider).save(exploration, observations);
       await ref
           .read(companionRepositoryProvider)
-          .applyObservations(observations);
+          .applyObservations(exploration.id, observations);
       await ref.read(explorationRepositoryProvider).clearActive();
       await ref.read(observationRepositoryProvider).clearCurrent();
       await load();

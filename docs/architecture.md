@@ -55,11 +55,13 @@ Repositoryはアプリデータの唯一の窓口です。永続化順序、集�
 | --- | --- | --- |
 | `ExplorationRepository` | `LocalExplorationRepository` | 探索開始・一時停止・再開・終了・30分自動終了、位置セッションの直列化、GPS点と距離の保存、中断状態の復元、非同期エラー通知 |
 | `ObservationRepository` | `LocalObservationRepository` | 撮影、画像無害化、観察入力、AIモック判定、現在の観察の復元 |
-| `JournalRepository` | `LocalJournalRepository` | 探索と観察を日記として保存し、同日の複数探索を保持 |
-| `CompanionRepository` | `LocalCompanionRepository` | 観察結果から相棒状態を更新・保存 |
+| `JournalRepository` | `LocalJournalRepository` | 探索IDを冪等キーとして探索と観察を保存し、同日の複数探索を保持 |
+| `CompanionRepository` | `LocalCompanionRepository` | 適用済み探索IDと相棒状態を同時保存し、観察結果を探索ごとに一度だけ反映 |
 | `SettingsRepository` | `LocalSettingsRepository` | 同意・通知・位置設定の保存、DBと写真の一括削除 |
 
 `LocationAccessException`は位置権限状態をViewModelが表示可能なエラーへ変換するためのRepository境界の例外です。
+
+日記確定は`JournalViewModel`が日記保存、相棒更新、探索削除、観察削除の順に実行します。各Repositoryは探索IDによる冪等性または永続化成功後のメモリ更新を保証し、途中失敗後に同じ操作を再試行しても日記と相棒状態を重複させません。
 
 ## Service
 

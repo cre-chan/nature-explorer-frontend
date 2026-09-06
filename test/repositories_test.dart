@@ -285,4 +285,40 @@ void main() {
       containsAll(['morning', 'afternoon']),
     );
   });
+
+  test(
+    'journal and companion updates are idempotent per exploration',
+    () async {
+      final database = InMemoryDatabaseService();
+      final clock = FakeClockService(DateTime(2026, 9, 6, 12));
+      final journals = LocalJournalRepository(database, clock, const Uuid());
+      final companion = LocalCompanionRepository(database);
+      final exploration = Exploration(
+        id: 'retry-target',
+        startedAt: clock.now(),
+        endedAt: clock.now(),
+        phase: ExplorationPhase.completed,
+      );
+      final observations = [
+        Observation(
+          id: 'observation-1',
+          explorationId: exploration.id,
+          imagePath: '/safe/photo.jpg',
+          createdAt: clock.now(),
+          classification: ClassificationStatus.usable,
+        ),
+      ];
+
+      final firstEntry = await journals.save(exploration, observations);
+      final retriedEntry = await journals.save(exploration, observations);
+      expect(retriedEntry.id, firstEntry.id);
+      expect(await journals.list(), hasLength(1));
+
+      await companion.applyObservations(exploration.id, observations);
+      await companion.applyObservations(exploration.id, observations);
+      final state = await companion.load();
+      expect(state.observationCount, 1);
+      expect(state.stage, CompanionStage.changing);
+    },
+  );
 }

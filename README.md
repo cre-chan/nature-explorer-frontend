@@ -192,5 +192,6 @@ Windowsの`.cmd`は同名の`.ps1`実装を現在のプロセスだけExecution 
 - ツールチェーン技術判断: [docs/adr/0002-portable-toolchain-wrappers.md](docs/adr/0002-portable-toolchain-wrappers.md)
 - 位置セッション技術判断: [docs/adr/0003-explicit-location-session-lifecycle.md](docs/adr/0003-explicit-location-session-lifecycle.md)
 - 中断探索の復元判断: [docs/adr/0004-interrupted-exploration-recovery.md](docs/adr/0004-interrupted-exploration-recovery.md)
+- 日記確定の冪等性判断: [docs/adr/0005-idempotent-journal-finalization.md](docs/adr/0005-idempotent-journal-finalization.md)
 - 回帰・異常系テスト設計: [docs/test-cases.md](docs/test-cases.md)
 - エージェント向け実装規則: [AGENTS.md](AGENTS.md)
