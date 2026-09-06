@@ -67,6 +67,8 @@ class FakeCameraService implements CameraService {
 class FakeFileService implements FileService {
   FakeFileService(this.root);
   final Directory root;
+  bool failToDelete = false;
+  int deleteCount = 0;
   @override
   Future<String> newPhotoPath(String id) async {
     root.createSync(recursive: true);
@@ -75,6 +77,8 @@ class FakeFileService implements FileService {
 
   @override
   Future<void> deleteAllPhotos() async {
+    deleteCount += 1;
+    if (failToDelete) throw StateError('写真を削除できませんでした');
     if (root.existsSync()) root.deleteSync(recursive: true);
   }
 }

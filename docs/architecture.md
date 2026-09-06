@@ -57,7 +57,7 @@ Repositoryはアプリデータの唯一の窓口です。永続化順序、集�
 | `ObservationRepository` | `LocalObservationRepository` | 撮影、画像無害化、観察入力、AIモック判定、現在の観察の復元 |
 | `JournalRepository` | `LocalJournalRepository` | 探索と観察を日記として保存し、同日の複数探索を保持 |
 | `CompanionRepository` | `LocalCompanionRepository` | 観察結果から相棒状態を更新・保存 |
-| `SettingsRepository` | `LocalSettingsRepository` | 同意・通知・位置設定の保存、DBと写真の一括削除 |
+| `SettingsRepository` | `LocalSettingsRepository` | 同意・通知・位置設定の保存、写真を先に削除してからDBを消す再試行可能な一括削除 |
 
 `LocationAccessException`は位置権限状態をViewModelが表示可能なエラーへ変換するためのRepository境界の例外です。
 
