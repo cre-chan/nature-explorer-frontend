@@ -18,7 +18,7 @@ Viewは描画、簡単な表示分岐、入力イベントからViewModelコマ�
 | 機能 | ファイル | 主なクラス |
 | --- | --- | --- |
 | アプリ・ルーティング | `lib/app/app.dart` | `SobaNoInochiApp`、`appRouter` |
-| 初回同意 | `lib/features/onboarding/onboarding_view.dart` | `OnboardingView` |
+| 初回同意・起動復旧 | `lib/features/onboarding/onboarding_view.dart` | `OnboardingView`（位置停止失敗の再試行導線を表示） |
 | ホーム・相棒 | `lib/features/home/home_view.dart` | `HomeView`、`CompanionView` |
 | 探索 | `lib/features/exploration/exploration_view.dart` | `ExplorationPrepView`、`ExplorationView`、`GpsStatusView`、`ReviewView` |
 | 探索の一時停止 | `lib/features/exploration/paused_exploration_view.dart` | `PausedExplorationView` |
@@ -35,7 +35,7 @@ ViewModelはRiverpod `Notifier`としてUI状態、表示用変換、入力検�
 
 | 機能 | ファイル | 状態・ViewModel |
 | --- | --- | --- |
-| 初回同意・復元先 | `lib/features/onboarding/onboarding_view_model.dart` | `OnboardingUiState`、`OnboardingViewModel` |
+| 初回同意・復元先 | `lib/features/onboarding/onboarding_view_model.dart` | `OnboardingUiState`、`OnboardingViewModel`（停止成功後だけ復元先を決定） |
 | ホーム集計 | `lib/features/home/home_view_model.dart` | `HomeUiState`、`HomeViewModel` |
 | 相棒 | `lib/features/home/companion_view_model.dart` | `CompanionViewModel` |
 | 探索状態・操作 | `lib/features/exploration/exploration_view_model.dart` | `ExplorationUiState`、`ExplorationViewModel` |
@@ -59,7 +59,7 @@ Repositoryはアプリデータの唯一の窓口です。永続化順序、集�
 | `CompanionRepository` | `LocalCompanionRepository` | 観察結果から相棒状態を更新・保存 |
 | `SettingsRepository` | `LocalSettingsRepository` | 同意・通知・位置設定の保存、DBと写真の一括削除 |
 
-`LocationAccessException`は位置権限状態をViewModelが表示可能なエラーへ変換するためのRepository境界の例外です。
+`LocationAccessException`は位置権限状態を、`ExplorationRestoreException`は中断探索の位置停止失敗をViewModelが表示可能なエラーへ変換するためのRepository境界の例外です。
 
 ## Service
 
@@ -87,7 +87,7 @@ Serviceは単一の外部データ源または端末機能をラップし、業�
 
 `LocationService.startTracking()`は位置ストリームとAndroidの位置フォアグラウンドサービスを開始し、`stopTracking()`は継続通知を含めて明示的に終了します。`LocalExplorationRepository`だけがこのAPIを呼び、一時停止、手動終了、30分自動終了、全削除、Repository破棄でストリーム解除後に停止完了を待ちます。
 
-探索開始と再開は画面が表示されているユーザー操作からのみ行います。Androidでは`ACCESS_BACKGROUND_LOCATION`を要求せず、探索中の位置フォアグラウンドサービスが動作している間だけバックグラウンド記録を継続します。アプリのプロセス終了中は非同期停止の完了を保証できないため、次回起動時に保存状態が`active`なら位置サービスを停止し、探索を`paused`へ正規化して`PausedExplorationView`を表示します。位置記録は中央の再開ボタンを押すまで開始しません。
+探索開始と再開は画面が表示されているユーザー操作からのみ行います。Androidでは`ACCESS_BACKGROUND_LOCATION`を要求せず、探索中の位置フォアグラウンドサービスが動作している間だけバックグラウンド記録を継続します。アプリのプロセス終了中は非同期停止の完了を保証できないため、次回起動時に保存状態が`active`なら位置サービスを停止し、探索を`paused`へ正規化して`PausedExplorationView`を表示します。停止に失敗した場合は`active`を保持したまま起動復旧画面で再試行し、成功後だけ`paused`を永続化して遷移します。位置記録は中央の再開ボタンを押すまで開始しません。
 
 手動終了は観察件数にかかわらず選択でき、確認ダイアログで確定してから位置記録を停止します。観察0件の探索も日記へ保存できますが、相棒の観察数や成長状態は変化しません。
 

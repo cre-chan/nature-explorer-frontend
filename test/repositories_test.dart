@@ -167,6 +167,60 @@ void main() {
     },
   );
 
+  test(
+    'interrupted exploration remains active until location stop retry succeeds',
+    () async {
+      final database = InMemoryDatabaseService();
+      final location = FakeLocationService()
+        ..tracking = true
+        ..failToStop = true;
+      final interrupted = Exploration(
+        id: 'interrupted-stop-failure',
+        startedAt: DateTime(2026, 9, 7, 9),
+        phase: ExplorationPhase.active,
+      );
+      await database.write(
+        'active_exploration',
+        jsonEncode(interrupted.toJson()),
+      );
+      final repository = LocalExplorationRepository(
+        database,
+        location,
+        FakeClockService(DateTime(2026, 9, 7, 9, 2)),
+        const Uuid(),
+      );
+
+      await expectLater(
+        repository.restore(),
+        throwsA(isA<ExplorationRestoreException>()),
+      );
+      expect(repository.active?.phase, ExplorationPhase.active);
+      expect(
+        Exploration.fromJson(
+          jsonDecode(database.values['active_exploration']!)
+              as Map<String, Object?>,
+        ).phase,
+        ExplorationPhase.active,
+      );
+      expect(location.tracking, isTrue);
+
+      location.failToStop = false;
+      await repository.restore();
+      expect(repository.active?.phase, ExplorationPhase.paused);
+      expect(
+        Exploration.fromJson(
+          jsonDecode(database.values['active_exploration']!)
+              as Map<String, Object?>,
+        ).phase,
+        ExplorationPhase.paused,
+      );
+      expect(location.stopCount, 1);
+      expect(location.tracking, isFalse);
+      await repository.dispose();
+      await location.close();
+    },
+  );
+
   test('clear and dispose both stop an active location session', () async {
     final location = FakeLocationService();
     final repository = LocalExplorationRepository(
